@@ -3,9 +3,14 @@ import os
 import random
 from datetime import datetime
 
-DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'ramesh_cables.db')
+DB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+os.makedirs(DB_DIR, exist_ok=True)
+DB_PATH = os.path.join(DB_DIR, 'ramesh_cables.db')
 
 def get_connection():
+    db_dir = os.path.dirname(os.path.abspath(DB_PATH))
+    if not os.path.exists(db_dir):
+        os.makedirs(db_dir, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
