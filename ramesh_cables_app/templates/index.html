@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RAMESH CABLES AND NET WORK - Cable Operator Management System</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            scv: '#2563eb',
+            tactv: '#059669',
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- HTML5 QR Code Library (Camera Barcode Scanner) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 pb-16">
+
+  <!-- 0. SECURE LOGIN SCREEN OVERLAY -->
+  <div id="securityLoginOverlay" class="fixed inset-0 bg-slate-950 z-[100] flex items-center justify-center p-4 {% if is_authenticated %}hidden{% endif %}">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-6 text-white shadow-2xl flex flex-col items-center text-center">
+      
+      <!-- Brand Logo & Security Badge -->
+      <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-3xl shadow-lg mb-3">
+        📺
+      </div>
+      <h2 class="text-base font-black uppercase tracking-wider text-white business-name-display">
+        RAMESH CABLES AND NET WORK
+      </h2>
+      <p class="text-xs text-blue-400 font-bold mt-0.5 flex items-center gap-1">
+        <span>🛡️</span>
+        <span>Secure Operator Access Portal</span>
+      </p>
+
+      <div class="w-full my-4 border-t border-slate-800"></div>
+
+      <!-- PIN Input Mode -->
+      <div id="pinLoginContainer" class="w-full space-y-3">
+        <label class="block text-xs text-slate-300 font-semibold">
+          Enter 4-Digit Security PIN (பாதுகாப்பு பின்):
+        </label>
+        
+        <div class="relative">
+          <input type="password" id="loginPinInput" maxlength="6" placeholder="● ● ● ●" class="w-full bg-slate-800 border-2 border-slate-700 focus:border-blue-500 rounded-2xl py-3 px-4 text-center text-2xl font-black font-mono tracking-widest text-white focus:outline-none transition-all">
+        </div>
+
+        <div id="loginErrorMsg" class="hidden text-rose-400 text-xs font-bold bg-rose-950/50 p-2 rounded-xl border border-rose-900">
+          Incorrect PIN! Please try again.
+        </div>
+
+        <!-- Touch Numpad for Phone Quick Entry -->
+        <div class="grid grid-cols-3 gap-2 pt-2">
+          <button type="button" onclick="app.appendPin('1')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">1</button>
+          <button type="button" onclick="app.appendPin('2')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">2</button>
+          <button type="button" onclick="app.appendPin('3')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">3</button>
+          <button type="button" onclick="app.appendPin('4')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">4</button>
+          <button type="button" onclick="app.appendPin('5')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">5</button>
+          <button type="button" onclick="app.appendPin('6')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">6</button>
+          <button type="button" onclick="app.appendPin('7')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">7</button>
+          <button type="button" onclick="app.appendPin('8')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">8</button>
+          <button type="button" onclick="app.appendPin('9')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">9</button>
+          <button type="button" onclick="app.clearPin()" class="pin-key bg-slate-800/50 hover:bg-slate-700 text-rose-400 py-3 rounded-xl font-bold text-sm transition-all">Clear</button>
+          <button type="button" onclick="app.appendPin('0')" class="pin-key bg-slate-800/80 hover:bg-slate-700 active:bg-blue-600 py-3 rounded-xl font-black text-lg text-white transition-all">0</button>
+          <button type="button" onclick="app.backspacePin()" class="pin-key bg-slate-800/50 hover:bg-slate-700 text-slate-300 py-3 rounded-xl font-bold text-sm transition-all">⌫</button>
+        </div>
+
+        <button type="button" id="unlockSystemBtn" onclick="app.submitLogin()" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-extrabold py-3.5 px-4 rounded-2xl shadow-lg mt-3 text-sm transition-all flex items-center justify-center gap-2">
+          <span>🔓</span>
+          <span>Unlock & Enter System</span>
+        </button>
+
+        <p class="text-[11px] text-slate-500 pt-1">
+          Default Security PIN: <span class="font-mono font-bold text-slate-300">1234</span>
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOP BRAND HEADER -->
+  <header class="bg-slate-900 text-white shadow-lg sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md font-black text-xl">
+              RC
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h1 class="text-lg sm:text-xl font-black tracking-tight business-name-display uppercase">
+                  RAMESH CABLES AND NET WORK
+                </h1>
+                <span class="hidden sm:inline-block bg-blue-500/20 text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-400/30">
+                  LCO PORTAL
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 flex items-center gap-2">
+                <span>SCV (350 Houses) &bull; TACTV (150 Houses)</span>
+                <span class="text-slate-500">|</span>
+                <span class="text-emerald-400 font-medium">📞 <span class="business-phone-display">{{ settings.contact_phone }}</span></span>
+              </p>
+            </div>
+          </div>
+
+          <!-- Mobile Connect Icon -->
+          <button onclick="document.getElementById('mobileQrModal').classList.remove('hidden'); document.getElementById('mobileQrModal').classList.add('flex');" class="md:hidden p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white" title="Open on Mobile Phone">
+            📱
+          </button>
+        </div>
+
+        <!-- Month Navigator & Quick Tools -->
+        <div class="flex items-center justify-between md:justify-end gap-2.5 pt-1 md:pt-0 border-t border-slate-800 md:border-0">
+          
+          <!-- Month Control -->
+          <div class="flex items-center bg-slate-800/90 rounded-xl p-1 border border-slate-700 shadow-inner">
+            <button onclick="app.changeMonth(-1)" class="p-1.5 rounded-lg hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs" title="Previous Month">
+              ◀
+            </button>
+            <div class="px-3 text-center min-w-[130px]">
+              <span id="currentMonthDisplay" class="text-xs font-bold text-white tracking-wide block">
+                {{ current_month_name }}
+              </span>
+              <span class="text-[10px] text-blue-400 uppercase font-semibold">Active Billing</span>
+            </div>
+            <button onclick="app.changeMonth(1)" class="p-1.5 rounded-lg hover:bg-slate-700 text-slate-300 hover:text-white transition-all text-xs" title="Next Month">
+              ▶
+            </button>
+          </div>
+
+          <!-- Mobile Link Pill (Desktop) -->
+          <button onclick="document.getElementById('mobileQrModal').classList.remove('hidden'); document.getElementById('mobileQrModal').classList.add('flex');" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-700/50 text-indigo-200 text-xs font-medium transition-all" title="Scan to open on smartphone">
+            <span>📱</span>
+            <span>Phone: {{ local_ip }}:5000</span>
+          </button>
+
+          <!-- Logout / Lock Button -->
+          <button onclick="app.logout()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-950/80 hover:bg-rose-900 border border-rose-700/50 text-rose-200 text-xs font-bold transition-all" title="Lock & Logout">
+            <span>🔒</span>
+            <span class="hidden sm:inline">Lock / Logout</span>
+          </button>
+
+          <!-- Settings Button -->
+          <button onclick="app.openSettings()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700 text-sm" title="Settings">
+            ⚙️
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 space-y-4">
+
+    <!-- PRIMARY ACTION HUB / QUICK SEARCH & SCANNER -->
+    <div class="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl">
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        
+        <!-- Big Barcode Scanner Launch Button -->
+        <button onclick="window.scannerInstance.open()" class="flex-1 bg-white hover:bg-slate-100 active:scale-98 text-blue-800 font-black py-3.5 px-5 rounded-xl shadow-lg flex items-center justify-center gap-3 transition-all">
+          <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-lg">
+            📷
+          </div>
+          <div class="text-left">
+            <div class="text-sm sm:text-base font-extrabold uppercase tracking-wide">
+              SCAN BOX BARCODE / QR
+            </div>
+            <div class="text-[11px] text-blue-600 font-semibold">
+              Point camera at STB to collect money instantly
+            </div>
+          </div>
+        </button>
+
+        <!-- Quick STB / Box Number Lookup Input -->
+        <div class="flex-1 bg-white/10 backdrop-blur-md rounded-xl p-1.5 border border-white/20 flex items-center gap-2">
+          <div class="pl-2 text-white/70 text-sm">⚡</div>
+          <input type="text" id="quickBoxSearchInput" placeholder="Enter Box No (e.g. SCV-1025) & Press Enter..." class="w-full bg-transparent text-white placeholder-white/60 text-xs sm:text-sm font-medium focus:outline-none">
+          <button onclick="const v = document.getElementById('quickBoxSearchInput').value.trim(); if(v) app.lookupAndOpenPayment(v);" class="bg-blue-500 hover:bg-blue-400 text-white text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap shadow-sm">
+            Find & Pay
+          </button>
+        </div>
+
+        <!-- Quick Utility Buttons -->
+        <div class="flex items-center gap-2">
+          <button onclick="app.openAddCustomer()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-bold py-2.5 px-3.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition-all">
+            <span>➕</span>
+            <span>Add Customer</span>
+          </button>
+          
+          <!-- Hidden CSV Import Input -->
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="app.handleCsvUpload(event)">
+          <button onclick="document.getElementById('csvFileInput').click()" class="bg-white/15 hover:bg-white/25 text-white font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all" title="Upload Customer List from CSV">
+            <span>📥</span>
+            <span class="hidden sm:inline">Import CSV</span>
+          </button>
+
+          <button onclick="app.exportCsv()" class="bg-white/15 hover:bg-white/25 text-white font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all" title="Download Excel/CSV Report">
+            <span>📊</span>
+            <span class="hidden sm:inline">Export CSV</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- FLOATING SUCCESS TOAST -->
+    <div id="toastMessage" class="fixed top-5 right-5 z-50 transform translate-y-[-100px] opacity-0 pointer-events-none transition-all duration-300 bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-400">
+      <span class="text-xl">✅</span>
+      <div>
+        <h4 class="font-black text-sm" id="toastTitle">Payment Recorded!</h4>
+        <p class="text-xs text-emerald-100 font-medium" id="toastDesc">House moved to Paid section.</p>
+      </div>
+    </div>
+
+    <!-- STEP 1: CHOOSE OPERATOR (SCV OR TACTV) -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+          <span>STEP 1:</span>
+          <span>SELECT OPERATOR TO MANAGE (ஆபரேட்டர் தேர்வு)</span>
+        </h2>
+        <span class="text-[11px] text-blue-600 font-bold">Click an operator below to switch:</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+        
+        <!-- CARD 1: SCV DIGITAL (350 HOUSES) -->
+        <div id="opCardScv" onclick="app.selectOperator('SCV')" class="op-card-scv cursor-pointer rounded-2xl p-4 sm:p-5 border-2 border-blue-200 bg-white hover:border-blue-400 shadow-sm transition-all duration-200 flex flex-col justify-between">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black text-xl shadow-md">
+                SCV
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-black text-blue-950">SCV DIGITAL</h3>
+                  <span id="scvActiveBadge" class="bg-blue-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                    ✓ ACTIVE
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 font-medium">Sumangali Cable Vision &bull; Standard Fee: ₹250</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xl sm:text-2xl font-black text-blue-700 block">350</span>
+              <span class="text-[10px] text-slate-400 font-bold uppercase">Houses Total</span>
+            </div>
+          </div>
+
+          <!-- Live Breakdown Pills -->
+          <div class="grid grid-cols-3 gap-2 pt-3 border-t border-blue-100/80 text-center">
+            <div class="bg-white/80 p-2 rounded-xl border border-blue-100">
+              <span class="text-[10px] text-slate-500 font-bold uppercase block">Collected</span>
+              <span id="scvCollected" class="text-sm font-black text-blue-700">₹0</span>
+            </div>
+            <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+              <span class="text-[10px] text-emerald-700 font-bold uppercase block">Paid Houses</span>
+              <span id="scvPaidCount" class="text-sm font-black text-emerald-700">0 Paid</span>
+            </div>
+            <div class="bg-rose-50 p-2 rounded-xl border border-rose-100">
+              <span class="text-[10px] text-rose-700 font-bold uppercase block">Due / Unpaid</span>
+              <span id="scvUnpaidCount" class="text-sm font-black text-rose-700">0 Due</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARD 2: TACTV ARASU (150 HOUSES) -->
+        <div id="opCardTactv" onclick="app.selectOperator('TACTV')" class="op-card-tactv cursor-pointer rounded-2xl p-4 sm:p-5 border-2 border-emerald-200 bg-white hover:border-emerald-400 shadow-sm transition-all duration-200 flex flex-col justify-between">
+          <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-xl shadow-md">
+                TAC
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base sm:text-lg font-black text-emerald-950">TACTV ARASU</h3>
+                  <span id="tactvActiveBadge" class="hidden bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                    ✓ ACTIVE
+                  </span>
+                </div>
+                <p class="text-xs text-slate-500 font-medium">Tamil Nadu Arasu Cable TV &bull; Standard Fee: ₹150</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-xl sm:text-2xl font-black text-emerald-700 block">150</span>
+              <span class="text-[10px] text-slate-400 font-bold uppercase">Houses Total</span>
+            </div>
+          </div>
+
+          <!-- Live Breakdown Pills -->
+          <div class="grid grid-cols-3 gap-2 pt-3 border-t border-emerald-100/80 text-center">
+            <div class="bg-white/80 p-2 rounded-xl border border-emerald-100">
+              <span class="text-[10px] text-slate-500 font-bold uppercase block">Collected</span>
+              <span id="tactvCollected" class="text-sm font-black text-emerald-700">₹0</span>
+            </div>
+            <div class="bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+              <span class="text-[10px] text-emerald-700 font-bold uppercase block">Paid Houses</span>
+              <span id="tactvPaidCount" class="text-sm font-black text-emerald-700">0 Paid</span>
+            </div>
+            <div class="bg-rose-50 p-2 rounded-xl border border-rose-100">
+              <span class="text-[10px] text-rose-700 font-bold uppercase block">Due / Unpaid</span>
+              <span id="tactvUnpaidCount" class="text-sm font-black text-rose-700">0 Due</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- STEP 2: ACTIVE OPERATOR DASHBOARD & 3 CORE TABS -->
+    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm space-y-4">
+      
+      <!-- Operator Title Banner -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="w-3.5 h-3.5 rounded-full" id="activeOpIndicatorDot"></span>
+          <div>
+            <h3 class="text-base sm:text-lg font-black text-slate-900" id="activeOpTitle">
+              Managing SCV DIGITAL (350 Houses)
+            </h3>
+            <p class="text-xs text-slate-500 font-medium" id="activeOpSubtitle">
+              Select a section below to see Unpaid, Paid, or All customers.
+            </p>
+          </div>
+        </div>
+
+        <!-- Overall Month Stats Summary Mini -->
+        <div class="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 text-xs">
+          <div>
+            <span class="text-slate-400 block text-[10px]">Month Collected:</span>
+            <span class="font-black text-emerald-600 text-sm" id="statTotalRevenue">₹0</span>
+          </div>
+          <div class="border-l border-slate-200 pl-3">
+            <span class="text-slate-400 block text-[10px]">Balance Due:</span>
+            <span class="font-black text-rose-600 text-sm" id="statPendingAmount">₹0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- THE 3 CORE TABS: ALL / PAID / UNPAID -->
+      <div>
+        <label class="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">
+          STEP 2: CHOOSE SECTION TO VIEW (பிரிவு தேர்வு):
+        </label>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          
+          <!-- TAB 1: UNPAID CUSTOMERS -->
+          <button id="tabBtnUnpaid" onclick="app.selectStatus('unpaid')" class="status-action-tab p-3.5 rounded-2xl border-2 border-rose-300 bg-rose-50 hover:bg-rose-100 text-rose-900 font-bold transition-all text-left flex items-center justify-between shadow-sm">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">🔴</span>
+              <div>
+                <div class="text-sm font-black tracking-wide">UNPAID CUSTOMERS</div>
+                <div class="text-xs text-rose-700 font-medium">பணம் கட்டாதவர்கள் (Collect Due)</div>
+              </div>
+            </div>
+            <span id="tabCountUnpaid" class="bg-rose-600 text-white font-black text-sm px-3 py-1 rounded-full shadow-sm">
+              0
+            </span>
+          </button>
+
+          <!-- TAB 2: PAID CUSTOMERS -->
+          <button id="tabBtnPaid" onclick="app.selectStatus('paid')" class="status-action-tab p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:bg-emerald-50 text-slate-700 font-bold transition-all text-left flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">🟢</span>
+              <div>
+                <div class="text-sm font-black tracking-wide">PAID CUSTOMERS</div>
+                <div class="text-xs text-emerald-700 font-medium">பணம் கட்டியவர்கள் (Completed)</div>
+              </div>
+            </div>
+            <span id="tabCountPaid" class="bg-slate-200 text-slate-700 font-black text-sm px-3 py-1 rounded-full">
+              0
+            </span>
+          </button>
+
+          <!-- TAB 3: ALL CUSTOMERS -->
+          <button id="tabBtnAll" onclick="app.selectStatus('all')" class="status-action-tab p-3.5 rounded-2xl border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold transition-all text-left flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <span class="text-2xl">📋</span>
+              <div>
+                <div class="text-sm font-black tracking-wide">ALL CUSTOMERS</div>
+                <div class="text-xs text-slate-500 font-medium">அனைத்து வீடுகள் (Full List)</div>
+              </div>
+            </div>
+            <span id="tabCountAll" class="bg-slate-200 text-slate-700 font-black text-sm px-3 py-1 rounded-full">
+              0
+            </span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- STEP 3: STREETS 1 TO 15 CAROUSEL / SELECTOR -->
+      <div class="pt-3 border-t border-slate-100 space-y-2.5">
+        <div class="flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">📍</span>
+            <span class="text-xs font-black uppercase tracking-wider text-slate-700">
+              STREETS 1 TO 15 (தெரு 1 முதல் 15 வரை)
+            </span>
+            <span class="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+              TACTV in 5 Streets
+            </span>
+          </div>
+          <span class="text-[11px] text-blue-600 font-semibold">Click a street to view or add houses:</span>
+        </div>
+
+        <!-- 15 Streets Buttons Bar -->
+        <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin" id="streetsButtonsContainer">
+          <!-- Populated dynamically by app.js: Street 1 to 15 -->
+        </div>
+
+        <!-- Active Selected Street Info & Action Banner -->
+        <div id="activeStreetBanner" class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-md">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-lg text-white" id="streetBannerNumber">
+              1
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <h4 class="font-black text-sm sm:text-base text-white" id="streetBannerTitle">Street 1</h4>
+                <span id="streetBannerCoverage" class="bg-emerald-500/30 text-emerald-300 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-emerald-400/30">
+                  SCV & TACTV (5 Streets)
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5" id="streetBannerCounts">
+                0 Total Houses in this street
+              </p>
+            </div>
+          </div>
+
+          <!-- Street Action Buttons: Add Customer in this Street & Edit Street Name -->
+          <div class="flex items-center gap-2">
+            <button onclick="app.openAddCustomerInCurrentStreet()" class="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-extrabold py-2 px-3.5 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-md transition-all">
+              <span>➕</span>
+              <span>Add Customer in This Street</span>
+            </button>
+            <button onclick="app.openEditStreetModal()" class="bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1 transition-all" title="Edit / Rename Street">
+              <span>✏️</span>
+              <span>Edit Street</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEARCH & STREET FILTERS -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100">
+        <!-- Search Input -->
+        <div class="md:col-span-2 relative">
+          <input type="text" id="searchInput" placeholder="🔍 Search Box No (e.g. 1025), Name, Street, Door No, Phone..." class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-medium focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+        </div>
+
+        <!-- Street Dropdown Filter -->
+        <div>
+          <select id="streetFilter" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2.5 text-xs sm:text-sm font-medium text-slate-700 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+            <option value="">All Streets / Areas (அனைத்து தெருக்கள்)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Result Counter Banner -->
+      <div class="flex items-center justify-between text-xs text-slate-500 font-semibold pt-1">
+        <span id="customerResultCount">Loading houses...</span>
+        <span class="text-emerald-700 font-bold">👉 Click green "Paid / Collect" button on any house to record money</span>
+      </div>
+
+    </div>
+
+    <!-- Hidden elements for backward compatibility if referenced -->
+    <div class="hidden">
+      <span id="statExpectedRevenue">₹0</span>
+      <span id="statCollectionPct">0%</span>
+      <div id="statProgressBar"></div>
+      <span id="statPaidHouses">0</span>
+      <span id="statUnpaidHouses">0</span>
+      <span id="statTotalHouses">500</span>
+      <span id="scvTotalCount">350</span>
+      <span id="tactvTotalCount">150</span>
+      <span id="scvPending">₹0</span>
+      <span id="tactvPending">₹0</span>
+      <div id="paymentModesBreakdown"></div>
+    </div>
+
+    <!-- CUSTOMERS GRID / LIST -->
+    <div id="customersLoading" class="hidden py-12 text-center text-slate-400">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <p class="text-xs mt-2 font-medium">Loading house records...</p>
+    </div>
+
+    <div id="customersList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+      <!-- Dynamically Populated by app.js -->
+    </div>
+
+    <!-- PAGINATION -->
+    <div id="paginationControls"></div>
+
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. CAMERA BARCODE / QR SCANNER MODAL -->
+  <div id="scannerModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl flex flex-col">
+      <!-- Header -->
+      <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📷</span>
+          <div>
+            <h3 class="font-bold text-sm">Scan STB Barcode or QR Code</h3>
+            <p class="text-[11px] text-slate-400">Point phone camera at the Set-top box sticker</p>
+          </div>
+        </div>
+        <button onclick="window.scannerInstance.close()" class="text-slate-400 hover:text-white text-lg p-1">
+          ✕
+        </button>
+      </div>
+
+      <!-- Scanner Body -->
+      <div class="p-4 bg-slate-50 text-center">
+        <div class="scanner-container mb-3 shadow-inner">
+          <div id="reader" style="width: 100%;"></div>
+          <div class="scanner-laser"></div>
+          <div class="scanner-crosshair"></div>
+        </div>
+
+        <div id="scannerStatus" class="text-xs mb-3 font-medium text-slate-600">
+          Initializing camera...
+        </div>
+
+        <!-- Manual Barcode Search Fallback -->
+        <div class="border-t border-slate-200 pt-3">
+          <label class="block text-xs font-semibold text-slate-600 mb-1 text-left">
+            Or type Box / Barcode Number manually:
+          </label>
+          <div class="flex gap-2">
+            <input type="text" id="manualBarcodeInput" placeholder="e.g. SCV-1025 or TAC-2010" class="flex-1 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <button onclick="const v = document.getElementById('manualBarcodeInput').value.trim(); if(v) { window.scannerInstance.close(); app.lookupAndOpenPayment(v); }" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-xl">
+              Lookup
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="p-3 bg-white border-t border-slate-100 text-center">
+        <button onclick="window.scannerInstance.close()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs">
+          Cancel & Close Camera
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MONEY PORT / RECORD PAYMENT MODAL -->
+  <div id="paymentModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col my-8">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-blue-700 to-indigo-700 text-white p-4 flex items-center justify-between">
+        <div>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full">
+            MONEY PORT &bull; PAYMENT RECEIPT
+          </span>
+          <h3 class="font-extrabold text-base mt-1 flex items-center gap-2">
+            <span id="payModalCustName">Customer</span>
+          </h3>
+        </div>
+        <button onclick="app.closePaymentModal()" class="text-white/70 hover:text-white text-lg p-1">
+          ✕
+        </button>
+      </div>
+
+      <!-- Customer Summary Banner -->
+      <div class="bg-slate-100 p-3.5 border-b border-slate-200 text-xs grid grid-cols-2 sm:grid-cols-3 gap-2">
+        <div>
+          <span class="text-slate-500 block">Box Number:</span>
+          <span class="font-mono font-bold text-slate-900 text-sm" id="payModalBoxNo">SCV-0000</span>
+          <span id="payModalOperator" class="ml-1 text-[10px]">SCV</span>
+        </div>
+        <div>
+          <span class="text-slate-500 block">Billing Month:</span>
+          <span class="font-bold text-blue-700 text-sm" id="payModalMonth">2026-11</span>
+        </div>
+        <div>
+          <span class="text-slate-500 block">Customer Phone:</span>
+          <span class="font-medium text-slate-800 text-xs" id="payModalPhone">N/A</span>
+        </div>
+        <div>
+          <span class="text-slate-500 block">Door & Street:</span>
+          <span class="font-medium text-slate-800 truncate block" id="payModalDoorStreet">Address</span>
+        </div>
+        <div class="sm:col-span-2">
+          <span class="text-slate-500 block">Monthly Fee / Due:</span>
+          <span class="font-bold text-slate-900" id="payModalFee">₹250</span>
+          <span class="text-rose-600 font-extrabold ml-1" id="payModalDue">(Due: ₹250)</span>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-4 space-y-4">
+        
+        <!-- Amount Input & Quick Shortcuts -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">
+            Amount Received (செலுத்தும் தொகை ₹):
+          </label>
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-base font-bold text-slate-400">₹</span>
+            <input type="number" id="paymentAmountInput" step="1" class="w-full pl-8 pr-3 py-2.5 text-lg font-black bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-600 focus:outline-none">
+          </div>
+          <!-- Quick Amount Buttons -->
+          <div class="flex items-center gap-1.5 mt-2">
+            <button onclick="app.setPaymentAmount(250)" class="flex-1 py-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">₹250</button>
+            <button onclick="app.setPaymentAmount(200)" class="flex-1 py-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">₹200</button>
+            <button onclick="app.setPaymentAmount(150)" class="flex-1 py-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">₹150</button>
+            <button onclick="app.setPaymentAmount(100)" class="flex-1 py-1 px-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700">₹100</button>
+          </div>
+        </div>
+
+        <!-- Payment Mode Selector -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">
+            Payment Mode (பணம் பெற்ற முறை):
+          </label>
+          <input type="hidden" id="selectedPaymentMode" value="Cash">
+          <div class="grid grid-cols-4 gap-2">
+            <button type="button" data-mode="Cash" onclick="app.selectPaymentMode('Cash')" class="pay-mode-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 bg-blue-600 text-white border-blue-600">
+              <span class="text-base">💵</span>
+              <span>Cash</span>
+            </button>
+            <button type="button" data-mode="GPay" onclick="app.selectPaymentMode('GPay')" class="pay-mode-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-300">
+              <span class="text-base">🔵</span>
+              <span>GPay</span>
+            </button>
+            <button type="button" data-mode="PhonePe" onclick="app.selectPaymentMode('PhonePe')" class="pay-mode-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-300">
+              <span class="text-base">🟣</span>
+              <span>PhonePe</span>
+            </button>
+            <button type="button" data-mode="Paytm" onclick="app.selectPaymentMode('Paytm')" class="pay-mode-btn py-2 px-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 bg-white text-slate-700 border-slate-300">
+              <span class="text-base">🟠</span>
+              <span>Paytm</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Toggle Dynamic UPI QR Generator Button -->
+        <div>
+          <button type="button" onclick="app.toggleUpiQr()" class="w-full py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-bold text-xs flex items-center justify-center gap-2 transition-all">
+            <span id="showUpiBtnText">📲 Show Customer UPI QR Code</span>
+          </button>
+          
+          <!-- UPI QR Box Container -->
+          <div id="upiQrContainer" class="hidden mt-3 p-4 bg-slate-50 border border-indigo-200 rounded-2xl text-center">
+            <div class="text-xs font-bold text-slate-700 mb-1">
+              Ask customer to scan with any UPI App (GPay / PhonePe / Paytm):
+            </div>
+            <div id="upiQrCodeTarget" class="my-2 flex justify-center"></div>
+            <div class="text-xs font-black text-emerald-700 mt-1" id="upiQrAmountDisplay">₹250</div>
+            <div class="text-[11px] font-mono text-slate-500" id="upiQrIdDisplay">rameshcables@okaxis</div>
+          </div>
+        </div>
+
+        <!-- Optional UPI Reference & Remarks -->
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">UPI Txn Ref # (Optional):</label>
+            <input type="text" id="paymentTxnRef" placeholder="e.g. 40291848..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs font-mono">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-600 mb-1">Remarks / குறிப்பு:</label>
+            <input type="text" id="paymentRemarks" placeholder="Monthly Bill" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-xs">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="p-4 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
+        <button type="button" onclick="app.closePaymentModal()" class="flex-1 py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-100">
+          Cancel
+        </button>
+        <button type="button" id="submitPaymentBtn" onclick="app.submitPayment()" class="flex-2 w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5">
+          <span>✓</span>
+          <span>Confirm & Save Payment</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 3. DIGITAL & THERMAL RECEIPT MODAL -->
+  <div id="receiptModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl flex flex-col my-8">
+      
+      <!-- Receipt Top Bar -->
+      <div class="bg-slate-900 text-white px-4 py-3 flex items-center justify-between no-print">
+        <span class="text-xs font-bold text-emerald-400 flex items-center gap-1">
+          <span>✓</span> Payment Recorded
+        </span>
+        <button onclick="receiptManager.closeReceipt()" class="text-slate-400 hover:text-white text-base">✕</button>
+      </div>
+
+      <!-- Printable Paper Content -->
+      <div id="receiptContent" class="p-3">
+        <!-- Rendered by receipt.js -->
+      </div>
+
+      <!-- Receipt Share Action Buttons -->
+      <div class="p-3.5 bg-slate-50 border-t border-slate-100 flex flex-col gap-2 no-print">
+        <button onclick="receiptManager.shareOnWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md transition-all">
+          <span class="text-base">💬</span>
+          <span>Share Receipt to Customer on WhatsApp</span>
+        </button>
+
+        <div class="flex gap-2">
+          <button onclick="receiptManager.printReceipt()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+            <span>🖨️</span>
+            <span>Print Receipt</span>
+          </button>
+          <button onclick="receiptManager.closeReceipt()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-2 px-3 rounded-xl text-xs transition-all">
+            Done
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 4. CUSTOMER PAYMENT HISTORY MODAL -->
+  <div id="historyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+      <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-sm" id="historyCustName">Customer History</h3>
+          <p class="text-xs text-blue-300 font-mono mt-0.5" id="historyBoxNo">STB Box</p>
+        </div>
+        <button onclick="app.closeHistoryModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto flex-1">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase">
+              <th class="py-2 px-3">Month</th>
+              <th class="py-2 px-3">Paid (₹)</th>
+              <th class="py-2 px-3">Mode</th>
+              <th class="py-2 px-3">Date</th>
+              <th class="py-2 px-3">Ref</th>
+              <th class="py-2 px-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <!-- Rendered by app.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-100 text-right">
+        <button onclick="app.closeHistoryModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold py-1.5 px-4 rounded-xl text-xs">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. ADD / EDIT CUSTOMER MODAL -->
+  <div id="customerModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl flex flex-col my-8">
+      <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm" id="customerModalTitle">Add New Customer / STB</h3>
+        <button onclick="app.closeCustomerModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <input type="hidden" id="customerIdInput" value="">
+        
+        <!-- Primary Box No & Another Box No -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Primary STB Box No *:</label>
+            <input type="text" id="custBoxNo" placeholder="e.g. SCV-1001 or TAC-2001" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-mono font-bold focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-blue-700 mb-1">Another Box No (2வது பாக்ஸ்):</label>
+            <input type="text" id="custSecondaryBoxNo" placeholder="e.g. SCV-1001-B (Optional)" class="w-full bg-blue-50/50 border border-blue-300 rounded-xl p-2.5 text-xs font-mono font-bold text-blue-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <!-- Smart Card / VC No & Operator -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Smart Card / VC No (கார்டு):</label>
+            <input type="text" id="custSmartCard" placeholder="e.g. 0291848201 (Optional)" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-mono focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Operator *:</label>
+            <select id="custOperator" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <option value="SCV">SCV (Sumangali Cable Vision)</option>
+              <option value="TACTV">TACTV (Arasu Cable TV)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Customer / House Owner Name *:</label>
+          <input type="text" id="custName" placeholder="e.g. Murugan S" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Mobile Phone (WhatsApp):</label>
+            <input type="tel" id="custPhone" placeholder="e.g. 9842101234" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Monthly Fee (₹) *:</label>
+            <input type="number" id="custMonthlyFee" value="250" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Door / House Number:</label>
+            <input type="text" id="custDoorNo" placeholder="e.g. 14/B" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Street (தெரு 1 முதல் 15) *:</label>
+            <select id="custStreet" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <!-- Populated dynamically with Streets 1 to 15 -->
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Area / Village:</label>
+            <input type="text" id="custArea" placeholder="Town" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:bg-white">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Package / Plan:</label>
+            <input type="text" id="custPlanDetails" placeholder="Standard Digital" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:bg-white">
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+        <button type="button" id="deleteCustomerBtn" onclick="app.deleteCurrentCustomer()" class="hidden text-rose-600 hover:text-rose-800 text-xs font-bold px-3 py-2 rounded-lg hover:bg-rose-50 transition-all">
+          🗑️ Delete House
+        </button>
+        <div class="flex gap-2 ml-auto">
+          <button onclick="app.closeCustomerModal()" class="py-2 px-4 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs">Cancel</button>
+          <button onclick="app.saveCustomer()" class="py-2 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm">Save House Details</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. EDIT STREET MODAL -->
+  <div id="editStreetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl p-5">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="font-black text-base text-slate-900" id="editStreetModalTitle">Edit Street</h3>
+          <p class="text-xs text-slate-500">Customize street name and operator coverage</p>
+        </div>
+        <button onclick="app.closeEditStreetModal()" class="text-slate-400 hover:text-slate-700 text-lg">✕</button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <input type="hidden" id="editStreetNumberInput" value="1">
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Street Name (தெரு பெயர்):</label>
+          <input type="text" id="editStreetNameInput" placeholder="e.g. Street 1 - Gandhi Salai" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <p class="text-[11px] text-slate-400 mt-1">Customers filed under this street will update automatically.</p>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Operator Coverage (ஆபரேட்டர் வகை):</label>
+          <select id="editStreetCoverageInput" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <option value="BOTH">BOTH (SCV Digital & TACTV Arasu)</option>
+            <option value="TACTV">TACTV Arasu Only (5 Streets)</option>
+            <option value="SCV">SCV Digital Only</option>
+          </select>
+          <p class="text-[11px] text-emerald-700 mt-1 font-semibold">Streets 1 to 5 are configured for both TACTV and SCV.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-4 mt-4 border-t border-slate-100">
+        <button type="button" onclick="app.closeEditStreetModal()" class="py-2 px-4 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs">Cancel</button>
+        <button type="button" onclick="app.saveStreetEdit()" class="py-2 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md">Save Street Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. SETTINGS & BUSINESS CONFIG MODAL -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl flex flex-col my-8">
+      <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
+        <h3 class="font-bold text-sm">System & UPI Settings</h3>
+        <button onclick="app.closeSettings()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="p-4 space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Company / Business Name:</label>
+          <input type="text" id="settingBizName" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-bold">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Owner Name:</label>
+            <input type="text" id="settingOwnerName" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Helpline Phone:</label>
+            <input type="text" id="settingPhone" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">UPI ID for Customer QR Payments:</label>
+          <input type="text" id="settingUpiId" placeholder="e.g. 9842100000@okaxis" class="w-full bg-slate-50 border border-blue-300 rounded-xl p-2 text-xs font-mono font-bold text-blue-700">
+          <p class="text-[10px] text-slate-500 mt-0.5">Customers can scan this UPI ID directly with GPay or PhonePe to pay</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Default SCV Fee (₹):</label>
+            <input type="number" id="settingScvFee" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-bold">
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">Default TACTV Fee (₹):</label>
+            <input type="number" id="settingTactvFee" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Address on Receipts:</label>
+          <input type="text" id="settingAddress" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2 text-xs">
+        </div>
+
+        <!-- Security PIN & Login Password -->
+        <div class="border-t border-slate-200 pt-3 mt-3 bg-blue-50/50 p-3 rounded-2xl border border-blue-200">
+          <div class="font-extrabold text-blue-950 mb-1.5 flex items-center gap-1.5 text-xs">
+            <span>🔒</span>
+            <span>Security PIN & Password (பாதுகாப்பு கடவுச்சொல்)</span>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">4-Digit Security PIN:</label>
+              <input type="password" maxlength="6" id="settingSecurityPin" placeholder="1234" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs font-mono font-bold tracking-widest text-center">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-700 mb-1">Admin Password:</label>
+              <input type="password" id="settingAdminPassword" placeholder="ramesh123" class="w-full bg-white border border-slate-300 rounded-xl p-2 text-xs">
+            </div>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">Default PIN is <strong>1234</strong>. You can change it anytime for safety.</p>
+        </div>
+
+        <!-- Danger Zone / Data Management -->
+        <div class="border-t border-slate-200 pt-3 mt-3">
+          <div class="font-bold text-slate-700 mb-2">Sample Demo Data (350 SCV + 150 TACTV)</div>
+          <button onclick="app.resetData(true)" class="w-full py-2 px-3 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold border border-blue-200 mb-2 transition-all">
+            🔄 Reload 500 Demo Houses (350 SCV + 150 TACTV)
+          </button>
+          <button onclick="app.resetData(false)" class="w-full py-1.5 px-3 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold border border-rose-200 text-[11px] transition-all">
+            ⚠️ Wipe All Records Clean
+          </button>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end gap-2">
+        <button onclick="app.closeSettings()" class="py-2 px-4 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs">Cancel</button>
+        <button onclick="app.saveSettings()" class="py-2 px-5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. MOBILE PHONE QR CODE CONNECT MODAL -->
+  <div id="mobileQrModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl p-5 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center mx-auto text-2xl mb-2">
+        📱
+      </div>
+      <h3 class="font-extrabold text-base text-slate-900">Open on Dad's Smartphone</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-4">
+        Scan this QR code with his phone camera or open the URL in Chrome while connected to the same Wi-Fi:
+      </p>
+
+      <div id="mobileQrContainer" class="p-3 bg-slate-50 border border-slate-200 rounded-2xl inline-block mb-3">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=http://{{ local_ip }}:5000" alt="Mobile URL QR" class="rounded-xl mx-auto" width="180" height="180">
+      </div>
+
+      <div class="font-mono font-black text-blue-700 text-sm bg-blue-50 py-2 px-3 rounded-xl border border-blue-200 select-all mb-4">
+        http://{{ local_ip }}:5000
+      </div>
+
+      <button onclick="document.getElementById('mobileQrModal').classList.add('hidden'); document.getElementById('mobileQrModal').classList.remove('flex');" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- APPLICATION SCRIPTS -->
+  <script src="/static/js/qrcode_gen.js"></script>
+  <script src="/static/js/receipt.js"></script>
+  <script src="/static/js/scanner.js"></script>
+  <script src="/static/js/app.js"></script>
+
+</body>
+</html>
