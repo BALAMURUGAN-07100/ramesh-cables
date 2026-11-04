@@ -187,3 +187,20 @@ body {
 .pulse-due {
   animation: pulse-subtle 2s infinite ease-in-out;
 }
+
+/* TAMIL SOFT KEYBOARD STYLES */
+.tk-key {
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.tk-key:active {
+  transform: scale(0.92);
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
