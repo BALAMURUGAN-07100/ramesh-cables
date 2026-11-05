@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.75, user-scalable=yes">
   <title>RAMESH CABLES AND NET WORK - Cable Operator Management System</title>
   
   <!-- Tailwind CSS -->
@@ -153,6 +153,13 @@
             <span>🔒</span>
             <span class="hidden sm:inline">Lock / Logout</span>
           </button>
+
+          <!-- Zoom Controller (A- / 100% / A+) -->
+          <div class="flex items-center bg-slate-800/90 rounded-xl p-1 border border-slate-700 shadow-inner" title="Zoom In / Out for Bigger Text">
+            <button type="button" onclick="app.adjustZoom(-0.1)" class="px-2 py-1 hover:bg-slate-700 rounded-lg text-slate-300 active:scale-95 text-xs font-bold" title="Zoom Out / Smaller Font">A−</button>
+            <span id="currentZoomDisplay" class="px-1.5 text-[10px] text-blue-300 font-mono font-bold">100%</span>
+            <button type="button" onclick="app.adjustZoom(0.1)" class="px-2 py-1 hover:bg-slate-700 rounded-lg text-slate-300 active:scale-95 text-xs font-black" title="Zoom In / Bigger Font">A+</button>
+          </div>
 
           <!-- Settings Button -->
           <button onclick="app.openSettings()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-all border border-slate-700 text-sm" title="Settings">
@@ -1022,6 +1029,19 @@
     </div>
   </div>
 
+  <!-- Floating Zoom & Text Size Controls (Mobile Friendly) -->
+  <div class="fixed bottom-5 left-5 z-40 bg-slate-900/95 backdrop-blur-md text-white p-1 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-1">
+    <button type="button" onclick="app.adjustZoom(-0.1)" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-blue-600 text-white font-black text-sm flex items-center justify-center shadow" title="Zoom Out">
+      🔍−
+    </button>
+    <button type="button" onclick="app.resetZoom()" class="px-2 py-1 text-[11px] font-mono font-black text-blue-300 hover:text-white" id="floatZoomDisplay" title="Click to reset zoom to 100%">
+      100%
+    </button>
+    <button type="button" onclick="app.adjustZoom(0.1)" class="w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 active:bg-blue-600 text-white font-black text-sm flex items-center justify-center shadow" title="Zoom In">
+      🔍+
+    </button>
+  </div>
+
   <!-- Floating Tamil Keyboard Button -->
   <button type="button" onclick="tamilKeyboard.toggle()" class="fixed bottom-5 right-5 z-40 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-extrabold text-xs py-2.5 px-4 rounded-2xl shadow-xl flex items-center gap-2 border border-white/20 active:scale-95 transition-all" title="Toggle Tamil Keyboard">
     <span class="text-base">⌨️</span>
@@ -1029,11 +1049,11 @@
   </button>
 
   <!-- APPLICATION SCRIPTS -->
-  <script src="/static/js/qrcode_gen.js?v=20261105_03"></script>
-  <script src="/static/js/receipt.js?v=20261105_03"></script>
-  <script src="/static/js/scanner.js?v=20261105_03"></script>
-  <script src="/static/js/tamil_keyboard.js?v=20261105_03"></script>
-  <script src="/static/js/app.js?v=20261105_03"></script>
+  <script src="/static/js/qrcode_gen.js?v=20261105_05"></script>
+  <script src="/static/js/receipt.js?v=20261105_05"></script>
+  <script src="/static/js/scanner.js?v=20261105_05"></script>
+  <script src="/static/js/tamil_keyboard.js?v=20261105_05"></script>
+  <script src="/static/js/app.js?v=20261105_05"></script>
 
 </body>
 </html>

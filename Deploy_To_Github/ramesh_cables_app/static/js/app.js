@@ -41,8 +41,40 @@ class RameshCablesApp {
   }
 
   async init() {
+    this.initZoom();
     this.setupEventListeners();
     await this.checkAuthStatus();
+  }
+
+  // ================= MOBILE ZOOM & TEXT SIZE CONTROLS =================
+  initZoom() {
+    const saved = localStorage.getItem('ramesh_cables_zoom') || '1.0';
+    this.applyZoom(parseFloat(saved));
+  }
+
+  adjustZoom(delta) {
+    let currentZoom = parseFloat(localStorage.getItem('ramesh_cables_zoom') || '1.0');
+    currentZoom = Math.min(1.6, Math.max(0.7, Math.round((currentZoom + delta) * 10) / 10));
+    this.applyZoom(currentZoom);
+  }
+
+  resetZoom() {
+    this.applyZoom(1.0);
+  }
+
+  applyZoom(zoomLevel) {
+    localStorage.setItem('ramesh_cables_zoom', zoomLevel.toString());
+    const pct = Math.round(zoomLevel * 100);
+    const disp = document.getElementById('currentZoomDisplay');
+    if (disp) disp.textContent = `${pct}%`;
+    const floatDisp = document.getElementById('floatZoomDisplay');
+    if (floatDisp) floatDisp.textContent = `${pct}%`;
+
+    if ('zoom' in document.body.style) {
+      document.body.style.zoom = zoomLevel.toString();
+    } else {
+      document.documentElement.style.fontSize = `${zoomLevel * 100}%`;
+    }
   }
 
   // ================= AUTHENTICATION & SECURITY =================
@@ -164,7 +196,51 @@ class RameshCablesApp {
     this.updateMonthDisplay();
     this.updateOperatorUI();
     this.updateStatusTabUI();
+    await this.syncLocalPaymentsWithServer();
     await this.refreshAll();
+  }
+
+  // ================= PHONE LOCALSTORAGE AUTO-SYNC =================
+  getLocalPayments() {
+    try {
+      return JSON.parse(localStorage.getItem('ramesh_cables_ledger_v1') || '[]');
+    } catch (_) {
+      return [];
+    }
+  }
+
+  savePaymentToLocalStorage(p) {
+    try {
+      const list = this.getLocalPayments();
+      const filtered = list.filter(item => !(item.box_number === p.box_number && item.month === p.month));
+      filtered.push(p);
+      localStorage.setItem('ramesh_cables_ledger_v1', JSON.stringify(filtered));
+    } catch (e) {
+      console.warn('LocalStorage save error:', e);
+    }
+  }
+
+  hasLocalPaymentsForMonth() {
+    const list = this.getLocalPayments();
+    return list.some(item => item.month === this.currentMonth);
+  }
+
+  async syncLocalPaymentsWithServer() {
+    const localPayments = this.getLocalPayments().filter(p => p.month === this.currentMonth);
+    if (!localPayments || localPayments.length === 0) return false;
+
+    let synced = false;
+    for (const p of localPayments) {
+      try {
+        const res = await fetch('/api/payments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(p)
+        });
+        if (res.ok) synced = true;
+      } catch (_) {}
+    }
+    return synced;
   }
 
   async loadSettings() {
@@ -518,7 +594,14 @@ class RameshCablesApp {
         alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
         return;
       }
-      const data = await res.json();
+      let data = await res.json();
+      if (data.paid_count === 0 && this.hasLocalPaymentsForMonth()) {
+        const didSync = await this.syncLocalPaymentsWithServer();
+        if (didSync) {
+          const reRes = await fetch(`/api/stats?month=${this.currentMonth}`);
+          if (reRes.ok) data = await reRes.json();
+        }
+      }
       this.statsData = data;
 
       const revEl = document.getElementById('statTotalRevenue');
@@ -970,6 +1053,19 @@ class RameshCablesApp {
       if (data.success) {
         this.closePaymentModal();
         
+        // Permanent Mobile Storage - Guarantee payments never disappear even if cloud server restarts
+        this.savePaymentToLocalStorage({
+          customer_id: custId,
+          box_number: boxNo,
+          customer_name: custName,
+          month: this.currentMonth,
+          amount: amount,
+          payment_mode: mode,
+          remarks: remarks,
+          transaction_ref: txnRef,
+          collected_by: (this.settings && this.settings.owner_name) || 'Ramesh'
+        });
+
         this.showToast(
           `✓ Payment of ₹${amount} Saved!`,
           `House ${boxNo} (${custName}) has been moved to Paid section.`
