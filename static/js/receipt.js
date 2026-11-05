@@ -12,15 +12,28 @@ class ReceiptManager {
     this.currentReceiptData = { payment, settings };
     const modal = document.getElementById('receiptModal');
     const container = document.getElementById('receiptContent');
+    if (!modal || !container) {
+      console.warn('Receipt modal elements not found');
+      return;
+    }
 
     const p = payment;
     const s = settings || {};
     const businessName = s.business_name || 'RAMESH CABLES AND NET WORK';
     const phone = s.contact_phone || '9842100000';
     const address = s.address || 'Tamil Nadu';
-    const dateFormatted = new Date(p.payment_date || Date.now()).toLocaleString('en-IN', {
+    let dateFormatted = new Date().toLocaleString('en-IN', {
       day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
     });
+    try {
+      const cleanDate = (p.payment_date || '').toString().replace(' ', 'T');
+      const d = cleanDate ? new Date(cleanDate) : new Date();
+      if (!isNaN(d.getTime())) {
+        dateFormatted = d.toLocaleString('en-IN', {
+          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true
+        });
+      }
+    } catch (_) {}
     
     const receiptNo = `RC-${new Date().getFullYear()}${(new Date().getMonth()+1).toString().padStart(2, '0')}-${p.id || Math.floor(Math.random()*9000+1000)}`;
 
@@ -112,9 +125,18 @@ class ReceiptManager {
     const businessName = s.business_name || 'RAMESH CABLES AND NET WORK';
     const bizPhone = s.contact_phone || '9842100000';
     
-    const dateFormatted = new Date(p.payment_date || Date.now()).toLocaleDateString('en-IN', {
+    let dateFormatted = new Date().toLocaleDateString('en-IN', {
       day: '2-digit', month: 'short', year: 'numeric'
     });
+    try {
+      const cleanDate = (p.payment_date || '').toString().replace(' ', 'T');
+      const d = cleanDate ? new Date(cleanDate) : new Date();
+      if (!isNaN(d.getTime())) {
+        dateFormatted = d.toLocaleDateString('en-IN', {
+          day: '2-digit', month: 'short', year: 'numeric'
+        });
+      }
+    } catch (_) {}
 
     const msg = 
 `*${businessName}*

@@ -241,23 +241,26 @@ def api_record_payment():
     transaction_ref = data.get('transaction_ref', '')
     collected_by = data.get('collected_by', 'Ramesh')
 
-    receipt = database.add_or_update_payment(
-        customer_id=customer_id,
-        month=month,
-        amount=amount,
-        payment_mode=payment_mode,
-        remarks=remarks,
-        transaction_ref=transaction_ref,
-        collected_by=collected_by
-    )
-
-    settings = database.get_all_settings()
-    return jsonify({
-        'success': True,
-        'message': f'Payment of ₹{amount:g} recorded successfully!',
-        'receipt': receipt,
-        'settings': settings
-    })
+    try:
+        receipt = database.add_or_update_payment(
+            customer_id=customer_id,
+            month=month,
+            amount=amount,
+            payment_mode=payment_mode,
+            remarks=remarks,
+            transaction_ref=transaction_ref,
+            collected_by=collected_by
+        )
+        settings = database.get_all_settings()
+        return jsonify({
+            'success': True,
+            'message': f'Payment of ₹{amount:g} recorded successfully!',
+            'receipt': receipt,
+            'settings': settings
+        })
+    except Exception as e:
+        print("Payment error:", e)
+        return jsonify({'success': False, 'error': f'Could not save payment: {str(e)}'}), 400
 
 @app.route('/api/payments/<int:payment_id>', methods=['DELETE'])
 @login_required
