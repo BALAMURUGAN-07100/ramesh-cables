@@ -4,6 +4,17 @@
  * Security PIN Access, Another Box Number, and Street-wise Filing
  */
 
+// Safe DOM helpers to eliminate ANY null element access errors
+function setElText(id, val) {
+  const el = typeof id === 'string' ? document.getElementById(id) : id;
+  if (el) el.textContent = (val !== null && val !== undefined) ? val : '';
+}
+
+function setElVal(id, val) {
+  const el = typeof id === 'string' ? document.getElementById(id) : id;
+  if (el) el.value = (val !== null && val !== undefined) ? val : '';
+}
+
 class RameshCablesApp {
   constructor() {
     this.currentMonth = this.getInitialMonth();
@@ -159,7 +170,11 @@ class RameshCablesApp {
   async loadSettings() {
     try {
       const res = await fetch('/api/settings');
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       this.settings = await res.json();
       this.applySettingsToUI();
     } catch (e) {
@@ -317,14 +332,16 @@ class RameshCablesApp {
     const currentSt = this.streets.find(s => s.street_name === this.street || `Street ${s.street_number}` === this.street) || this.streets[0];
     if (!currentSt) return;
 
-    document.getElementById('editStreetModalTitle').textContent = `Edit Street ${currentSt.street_number}`;
-    document.getElementById('editStreetNumberInput').value = currentSt.street_number;
-    document.getElementById('editStreetNameInput').value = currentSt.street_name;
-    document.getElementById('editStreetCoverageInput').value = currentSt.operator_coverage || 'BOTH';
+    setElText('editStreetModalTitle', `Edit Street ${currentSt.street_number}`);
+    setElVal('editStreetNumberInput', currentSt.street_number);
+    setElVal('editStreetNameInput', currentSt.street_name);
+    setElVal('editStreetCoverageInput', currentSt.operator_coverage || 'BOTH');
 
     const modal = document.getElementById('editStreetModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
   }
 
   closeEditStreetModal() {
@@ -496,7 +513,11 @@ class RameshCablesApp {
   async loadStats() {
     try {
       const res = await fetch(`/api/stats?month=${this.currentMonth}`);
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       this.statsData = data;
 
@@ -540,11 +561,15 @@ class RameshCablesApp {
     try {
       const url = `/api/customers?month=${this.currentMonth}&operator=${this.operator}&status=${this.status}&search=${encodeURIComponent(this.search)}&street=${encodeURIComponent(this.street)}&page=${this.page}&limit=${this.limit}`;
       const res = await fetch(url);
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
 
       const streetNote = this.street ? `in ${this.street}` : 'across all streets';
-      document.getElementById('customerResultCount').textContent = `Showing ${data.customers.length} of ${data.total} houses (${this.operator} ${streetNote})`;
+      setElText('customerResultCount', `Showing ${data.customers.length} of ${data.total} houses (${this.operator} ${streetNote})`);
       this.renderCustomerCards(data.customers);
       this.renderPagination(data);
     } catch (e) {
@@ -735,7 +760,11 @@ class RameshCablesApp {
   async lookupAndOpenPayment(code) {
     try {
       const res = await fetch(`/api/stb/lookup?code=${encodeURIComponent(code)}&month=${this.currentMonth}`);
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       if (data.found && data.customer) {
         this.openPaymentModalWithCustomer(data.customer);
@@ -751,8 +780,12 @@ class RameshCablesApp {
   async openPaymentModal(customerId) {
     try {
       const res = await fetch(`/api/customers/${customerId}?month=${this.currentMonth}`);
-      if (res.status === 401) return this.checkAuthStatus();
-      const customer = await res.json();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to unlock.');
+        return;
+      }
+      const customer = await res.json().catch(() => ({ error: 'Invalid response from server' }));
       if (!res.ok || customer.error) {
         alert(customer.error || `Server error (${res.status})`);
         return;
@@ -760,7 +793,7 @@ class RameshCablesApp {
       this.openPaymentModalWithCustomer(customer);
     } catch (e) {
       console.error('Error opening payment modal:', e);
-      alert('Could not fetch customer details: ' + (e.message || 'Check connection'));
+      alert('Could not fetch customer details: ' + (e.message || 'Check connection') + '. Please check if server is running or refresh.');
     }
   }
 
@@ -768,11 +801,8 @@ class RameshCablesApp {
     this.selectedCustomer = cust;
     const modal = document.getElementById('paymentModal');
 
-    const nameEl = document.getElementById('payModalCustName');
-    if (nameEl) nameEl.textContent = cust.customer_name || 'Customer';
-
-    const boxEl = document.getElementById('payModalBoxNo');
-    if (boxEl) boxEl.textContent = cust.box_number || '';
+    setElText('payModalCustName', cust.customer_name || 'Customer');
+    setElText('payModalBoxNo', cust.box_number || '');
 
     const opBadge = document.getElementById('payModalOperator');
     if (opBadge) {
@@ -782,55 +812,44 @@ class RameshCablesApp {
         'text-xs font-bold px-2 py-0.5 rounded badge-tactv';
     }
 
-    const doorEl = document.getElementById('payModalDoorStreet');
-    if (doorEl) doorEl.textContent = `${cust.door_no ? cust.door_no + ', ' : ''}${cust.street || ''}`;
-
-    const phoneEl = document.getElementById('payModalPhone');
-    if (phoneEl) phoneEl.textContent = cust.phone || 'N/A';
-
-    const monthEl = document.getElementById('payModalMonth');
-    if (monthEl) monthEl.textContent = this.currentMonth;
+    setElText('payModalDoorStreet', `${cust.door_no ? cust.door_no + ', ' : ''}${cust.street || ''}`);
+    setElText('payModalPhone', cust.phone || 'N/A');
+    setElText('payModalMonth', this.currentMonth);
 
     const due = cust.current_month_due !== undefined ? cust.current_month_due : cust.monthly_fee;
     const fee = cust.monthly_fee || 250;
 
-    const feeEl = document.getElementById('payModalFee');
-    if (feeEl) feeEl.textContent = `₹${fee}`;
-
-    const dueEl = document.getElementById('payModalDue');
-    if (dueEl) dueEl.textContent = `₹${due}`;
+    setElText('payModalFee', `₹${fee}`);
+    setElText('payModalDue', `(Due: ₹${due})`);
     
-    const amtInput = document.getElementById('paymentAmountInput');
-    if (amtInput) amtInput.value = due > 0 ? due : fee;
-
-    const remarksEl = document.getElementById('paymentRemarks');
-    if (remarksEl) remarksEl.value = '';
-
-    const txnEl = document.getElementById('paymentTxnRef');
-    if (txnEl) txnEl.value = '';
+    setElVal('paymentAmountInput', due > 0 ? due : fee);
+    setElVal('paymentRemarks', '');
+    setElVal('paymentTxnRef', '');
 
     const upiContainer = document.getElementById('upiQrContainer');
     if (upiContainer) upiContainer.classList.add('hidden');
 
-    const upiText = document.getElementById('showUpiBtnText');
-    if (upiText) upiText.textContent = '📲 Show Customer UPI QR Code';
+    setElText('showUpiBtnText', '📲 Show Customer UPI QR Code');
 
     if (modal) {
       modal.classList.remove('hidden');
       modal.classList.add('flex');
     }
+    const amtInput = document.getElementById('paymentAmountInput');
     if (amtInput) amtInput.focus();
   }
 
   closePaymentModal() {
     const modal = document.getElementById('paymentModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
     this.selectedCustomer = null;
   }
 
   setPaymentAmount(amt) {
-    document.getElementById('paymentAmountInput').value = amt;
+    setElVal('paymentAmountInput', amt);
     this.updateUpiQrIfOpen();
   }
 
@@ -846,7 +865,7 @@ class RameshCablesApp {
       }
     });
 
-    document.getElementById('selectedPaymentMode').value = mode;
+    setElVal('selectedPaymentMode', mode);
 
     if (['GPay', 'PhonePe', 'Paytm', 'UPI'].includes(mode)) {
       this.generateAndShowUpiQr();
@@ -855,17 +874,18 @@ class RameshCablesApp {
 
   toggleUpiQr() {
     const container = document.getElementById('upiQrContainer');
+    if (!container) return;
     if (container.classList.contains('hidden')) {
       this.generateAndShowUpiQr();
     } else {
       container.classList.add('hidden');
-      document.getElementById('showUpiBtnText').textContent = '📲 Show Customer UPI QR Code';
+      setElText('showUpiBtnText', '📲 Show Customer UPI QR Code');
     }
   }
 
   updateUpiQrIfOpen() {
     const container = document.getElementById('upiQrContainer');
-    if (!container.classList.contains('hidden')) {
+    if (container && !container.classList.contains('hidden')) {
       this.generateAndShowUpiQr();
     }
   }
@@ -874,7 +894,10 @@ class RameshCablesApp {
     if (!this.selectedCustomer) return;
     const container = document.getElementById('upiQrContainer');
     const qrDiv = document.getElementById('upiQrCodeTarget');
-    const amount = parseFloat(document.getElementById('paymentAmountInput').value) || this.selectedCustomer.monthly_fee;
+    if (!container || !qrDiv) return;
+
+    const amtInp = document.getElementById('paymentAmountInput');
+    const amount = (amtInp && parseFloat(amtInp.value)) || this.selectedCustomer.monthly_fee;
     
     const upiId = this.settings.upi_id || 'rameshcables@okaxis';
     const bizName = this.settings.business_name || 'RAMESH CABLES';
@@ -883,16 +906,18 @@ class RameshCablesApp {
     const upiUri = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(bizName)}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
 
     qrDiv.innerHTML = '';
-    new QRCode(qrDiv, {
-      text: upiUri,
-      width: 200,
-      height: 200
-    });
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrDiv, {
+        text: upiUri,
+        width: 200,
+        height: 200
+      });
+    }
 
-    document.getElementById('upiQrAmountDisplay').textContent = `₹${amount}`;
-    document.getElementById('upiQrIdDisplay').textContent = upiId;
+    setElText('upiQrAmountDisplay', `₹${amount}`);
+    setElText('upiQrIdDisplay', upiId);
     container.classList.remove('hidden');
-    document.getElementById('showUpiBtnText').textContent = 'Hide UPI QR Code';
+    setElText('showUpiBtnText', 'Hide UPI QR Code');
   }
 
   // ================= SAVE PAYMENT =================
@@ -901,10 +926,14 @@ class RameshCablesApp {
     const custId = this.selectedCustomer.id;
     const custName = this.selectedCustomer.customer_name;
     const boxNo = this.selectedCustomer.box_number;
-    const amount = parseFloat(document.getElementById('paymentAmountInput').value);
-    const mode = document.getElementById('selectedPaymentMode').value || 'Cash';
-    const remarks = document.getElementById('paymentRemarks').value;
-    const txnRef = document.getElementById('paymentTxnRef').value;
+    const amtInp = document.getElementById('paymentAmountInput');
+    const amount = amtInp ? parseFloat(amtInp.value) : 0;
+    const modeEl = document.getElementById('selectedPaymentMode');
+    const mode = modeEl ? modeEl.value || 'Cash' : 'Cash';
+    const remEl = document.getElementById('paymentRemarks');
+    const remarks = remEl ? remEl.value : '';
+    const txnEl = document.getElementById('paymentTxnRef');
+    const txnRef = txnEl ? txnEl.value : '';
 
     if (!amount || amount <= 0) {
       alert('Please enter a valid payment amount greater than ₹0');
@@ -912,8 +941,10 @@ class RameshCablesApp {
     }
 
     const submitBtn = document.getElementById('submitPaymentBtn');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = 'Saving...';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = 'Saving...';
+    }
 
     try {
       const res = await fetch('/api/payments', {
@@ -926,11 +957,15 @@ class RameshCablesApp {
           payment_mode: mode,
           remarks: remarks,
           transaction_ref: txnRef,
-          collected_by: this.settings.owner_name || 'Ramesh'
+          collected_by: (this.settings && this.settings.owner_name) || 'Ramesh'
         })
       });
 
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (data.success) {
         this.closePaymentModal();
@@ -957,15 +992,21 @@ class RameshCablesApp {
       console.error('Error submitting payment:', e);
       alert('Error recording payment: ' + (e.message || 'Check connection'));
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '✓ Confirm & Save Payment';
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '✓ Confirm & Save Payment';
+      }
     }
   }
 
   async viewLatestReceipt(customerId) {
     try {
       const res = await fetch(`/api/customers/${customerId}?month=${this.currentMonth}`);
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const cust = await res.json();
       
       const payments = (cust.payments || []).filter(p => p.month === this.currentMonth);
@@ -994,7 +1035,11 @@ class RameshCablesApp {
   async sendWhatsAppReminder(customerId) {
     try {
       const res = await fetch(`/api/customers/${customerId}?month=${this.currentMonth}`);
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const cust = await res.json();
       window.receiptManager.sendReminderWhatsApp(cust, this.currentMonth, this.settings);
     } catch (e) {
@@ -1005,11 +1050,15 @@ class RameshCablesApp {
   async viewHistory(customerId) {
     try {
       const res = await fetch(`/api/customers/${customerId}?month=${this.currentMonth}`);
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const cust = await res.json();
 
-      document.getElementById('historyCustName').textContent = cust.customer_name;
-      document.getElementById('historyBoxNo').textContent = `${cust.box_number} (${cust.operator})`;
+      setElText('historyCustName', cust.customer_name);
+      setElText('historyBoxNo', `${cust.box_number} (${cust.operator})`);
       
       const container = document.getElementById('historyTableBody');
       if (cust.payments && cust.payments.length > 0) {
@@ -1054,7 +1103,11 @@ class RameshCablesApp {
 
     try {
       const res = await fetch(`/api/payments/${paymentId}`, { method: 'DELETE' });
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         this.viewHistory(customerId);
@@ -1070,14 +1123,14 @@ class RameshCablesApp {
 
   // ================= ADD / EDIT ALL CUSTOMERS =================
   openAddCustomer() {
-    document.getElementById('customerModalTitle').textContent = 'Add New Customer / STB';
-    document.getElementById('customerIdInput').value = '';
-    document.getElementById('custBoxNo').value = '';
-    document.getElementById('custSecondaryBoxNo').value = '';
-    document.getElementById('custSmartCard').value = '';
-    document.getElementById('custName').value = '';
-    document.getElementById('custPhone').value = '';
-    document.getElementById('custDoorNo').value = '';
+    setElText('customerModalTitle', 'Add New Customer / STB');
+    setElVal('customerIdInput', '');
+    setElVal('custBoxNo', '');
+    setElVal('custSecondaryBoxNo', '');
+    setElVal('custSmartCard', '');
+    setElVal('custName', '');
+    setElVal('custPhone', '');
+    setElVal('custDoorNo', '');
     
     // Default street to currently selected street or first street
     const streetSelect = document.getElementById('custStreet');
@@ -1090,48 +1143,58 @@ class RameshCablesApp {
       }
     }
 
-    document.getElementById('custArea').value = '';
-    document.getElementById('custOperator').value = this.operator || 'SCV';
-    document.getElementById('custMonthlyFee').value = this.operator === 'SCV' ? 
+    setElVal('custArea', '');
+    setElVal('custOperator', this.operator || 'SCV');
+    setElVal('custMonthlyFee', this.operator === 'SCV' ? 
       (this.settings.scv_default_fee || '250') : 
-      (this.settings.tactv_default_fee || '150');
-    document.getElementById('custPlanDetails').value = 'Standard Package';
-    document.getElementById('deleteCustomerBtn').classList.add('hidden');
+      (this.settings.tactv_default_fee || '150'));
+    setElVal('custPlanDetails', 'Standard Package');
+    
+    const delBtn = document.getElementById('deleteCustomerBtn');
+    if (delBtn) delBtn.classList.add('hidden');
 
     const modal = document.getElementById('customerModal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
   }
 
   async openEditCustomer(customerId) {
     try {
       const res = await fetch(`/api/customers/${customerId}?month=${this.currentMonth}`);
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const cust = await res.json();
 
-      document.getElementById('customerModalTitle').textContent = `Edit Customer: ${cust.customer_name}`;
-      document.getElementById('customerIdInput').value = cust.id;
-      document.getElementById('custBoxNo').value = cust.box_number;
-      document.getElementById('custSecondaryBoxNo').value = cust.secondary_box_number || '';
-      document.getElementById('custSmartCard').value = cust.smart_card_number || '';
-      document.getElementById('custName').value = cust.customer_name;
-      document.getElementById('custPhone').value = cust.phone || '';
-      document.getElementById('custDoorNo').value = cust.door_no || '';
+      setElText('customerModalTitle', `Edit Customer: ${cust.customer_name}`);
+      setElVal('customerIdInput', cust.id);
+      setElVal('custBoxNo', cust.box_number);
+      setElVal('custSecondaryBoxNo', cust.secondary_box_number || '');
+      setElVal('custSmartCard', cust.smart_card_number || '');
+      setElVal('custName', cust.customer_name);
+      setElVal('custPhone', cust.phone || '');
+      setElVal('custDoorNo', cust.door_no || '');
       
       const streetSelect = document.getElementById('custStreet');
       if (streetSelect) streetSelect.value = cust.street || '';
 
-      document.getElementById('custArea').value = cust.area || '';
-      document.getElementById('custOperator').value = cust.operator;
-      document.getElementById('custMonthlyFee').value = cust.monthly_fee;
-      document.getElementById('custPlanDetails').value = cust.plan_details || '';
+      setElVal('custArea', cust.area || '');
+      setElVal('custOperator', cust.operator);
+      setElVal('custMonthlyFee', cust.monthly_fee);
+      setElVal('custPlanDetails', cust.plan_details || '');
 
       const deleteBtn = document.getElementById('deleteCustomerBtn');
       if (deleteBtn) deleteBtn.classList.remove('hidden');
 
       const modal = document.getElementById('customerModal');
-      modal.classList.remove('hidden');
-      modal.classList.add('flex');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
     } catch (e) {
       alert('Could not fetch customer info');
     }
@@ -1196,7 +1259,11 @@ class RameshCablesApp {
         });
       }
 
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         this.closeCustomerModal();
@@ -1225,7 +1292,11 @@ class RameshCablesApp {
 
     try {
       const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         this.closeCustomerModal();
@@ -1242,15 +1313,15 @@ class RameshCablesApp {
 
   // ================= SETTINGS & SECURITY =================
   openSettings() {
-    document.getElementById('settingBizName').value = this.settings.business_name || '';
-    document.getElementById('settingOwnerName').value = this.settings.owner_name || '';
-    document.getElementById('settingPhone').value = this.settings.contact_phone || '';
-    document.getElementById('settingUpiId').value = this.settings.upi_id || '';
-    document.getElementById('settingScvFee').value = this.settings.scv_default_fee || '250';
-    document.getElementById('settingTactvFee').value = this.settings.tactv_default_fee || '150';
-    document.getElementById('settingAddress').value = this.settings.address || '';
-    document.getElementById('settingSecurityPin').value = this.settings.security_pin || '1234';
-    document.getElementById('settingAdminPassword').value = this.settings.admin_password || 'ramesh123';
+    setElVal('settingBizName', this.settings.business_name || '');
+    setElVal('settingOwnerName', this.settings.owner_name || '');
+    setElVal('settingPhone', this.settings.contact_phone || '');
+    setElVal('settingUpiId', this.settings.upi_id || '');
+    setElVal('settingScvFee', this.settings.scv_default_fee || '250');
+    setElVal('settingTactvFee', this.settings.tactv_default_fee || '150');
+    setElVal('settingAddress', this.settings.address || '');
+    setElVal('settingSecurityPin', this.settings.security_pin || '1234');
+    setElVal('settingAdminPassword', this.settings.admin_password || 'ramesh123');
 
     const modal = document.getElementById('settingsModal');
     modal.classList.remove('hidden');
@@ -1285,7 +1356,11 @@ class RameshCablesApp {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         this.settings = data.settings;
@@ -1311,7 +1386,11 @@ class RameshCablesApp {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ seed_demo: seedDemo })
       });
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         alert(data.message);
@@ -1336,7 +1415,11 @@ class RameshCablesApp {
         method: 'POST',
         body: formData
       });
-      if (res.status === 401) return this.checkAuthStatus();
+      if (res.status === 401) {
+        this.checkAuthStatus();
+        alert('Security PIN required. Please enter your 4-digit PIN (1234) on screen to confirm payment.');
+        return;
+      }
       const data = await res.json();
       if (data.success) {
         alert(data.message);

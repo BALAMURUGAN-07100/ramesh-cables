@@ -12,6 +12,10 @@ class ReceiptManager {
     this.currentReceiptData = { payment, settings };
     const modal = document.getElementById('receiptModal');
     const container = document.getElementById('receiptContent');
+    if (!modal || !container) {
+      console.warn('Receipt modal elements not found');
+      return;
+    }
 
     const p = payment;
     const s = settings || {};
